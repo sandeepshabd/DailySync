@@ -7,9 +7,11 @@ import com.facebook.FacebookException
 import com.facebook.login.LoginResult
 import com.sandeepshabd.dailysync.activities.ILoginView
 import com.sandeepshabd.dailysync.activities.SummaryActivity
+import com.sandeepshabd.dailysync.services.DailySyncService
 import org.jetbrains.anko.AnkoLogger
 import org.jetbrains.anko.info
 import org.jetbrains.anko.startActivity
+import org.jetbrains.anko.startService
 
 /**
  * Created by sandeepshabd on 1/3/18.
@@ -43,7 +45,7 @@ class FacebookHelper(var context: Context):AnkoLogger {
                                 "Auth Token: "
                                 + loginResult.getAccessToken().getToken()
                 )
-
+                context.startService<DailySyncService>()
                 context.startActivity<SummaryActivity>()
                 loginActivityToFinish?.finishLoginActivity()
 

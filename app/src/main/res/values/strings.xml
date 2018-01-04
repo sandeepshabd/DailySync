@@ -1,10 +1,7 @@
 <resources>
     <string name="app_name">Daily Sync</string>
 
-    <!-- Strings related to login -->
-    <string name="facebook_app_id"></string>
-    <string name="fb_login_protocol_scheme"></string>
-
+    <string name="numbers">Numbers to display</string>
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password (optional)</string>
     <string name="action_sign_in">Sign in or register</string>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Strings related to login -->
+    <string name="facebook_app_id"></string>
+    <string name="fb_login_protocol_scheme"></string>
+</resources>

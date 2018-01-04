@@ -1,13 +1,12 @@
 package com.sandeepshabd.dailysync.helper
 
 import android.content.Context
-
 import com.facebook.CallbackManager
 import com.facebook.FacebookCallback
 import com.facebook.FacebookException
 import com.facebook.login.LoginResult
+import com.sandeepshabd.dailysync.activities.ILoginView
 import com.sandeepshabd.dailysync.activities.SummaryActivity
-
 import org.jetbrains.anko.AnkoLogger
 import org.jetbrains.anko.info
 import org.jetbrains.anko.startActivity
@@ -18,6 +17,12 @@ import org.jetbrains.anko.startActivity
 class FacebookHelper(var context: Context):AnkoLogger {
 
     var callBackmanager:CallbackManager? = null
+    var loginActivityToFinish: ILoginView? = null
+
+    fun registerActivity(loginActivity:ILoginView?){
+        loginActivityToFinish = loginActivity
+    }
+
 
     fun registerFacebook():CallbackManager?{
         if(callBackmanager == null){
@@ -40,6 +45,7 @@ class FacebookHelper(var context: Context):AnkoLogger {
                 )
 
                 context.startActivity<SummaryActivity>()
+                loginActivityToFinish?.finishLoginActivity()
 
            }
 

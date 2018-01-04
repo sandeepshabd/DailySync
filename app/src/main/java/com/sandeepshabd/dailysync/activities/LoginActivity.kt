@@ -24,6 +24,7 @@ import android.widget.TextView
 import java.util.ArrayList
 import android.Manifest.permission.READ_CONTACTS
 import android.content.Intent
+import com.facebook.login.LoginManager
 import com.facebook.login.widget.LoginButton
 import com.sandeepshabd.dailysync.DailySyncApplication
 import com.sandeepshabd.dailysync.R
@@ -35,7 +36,11 @@ import javax.inject.Inject
 /**
  * A login screen that offers login via email/password.
  */
-class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
+class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,ILoginView {
+    override fun finishLoginActivity() {
+        finish()
+    }
+
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
@@ -48,6 +53,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+        LoginManager.getInstance().logOut()
         injectThisActivity()
         // Set up the login form.
         populateAutoComplete()
@@ -66,6 +72,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
         loginButton.setReadPermissions("email");
 
         // Callback registration
+        facebookHelper.registerActivity(this)
         loginButton.registerCallback(facebookHelper.registerFacebook(),
                 facebookHelper.provideFacebookCallBack())
 

@@ -23,14 +23,14 @@ import android.widget.TextView
 
 import java.util.ArrayList
 import android.Manifest.permission.READ_CONTACTS
-import com.facebook.CallbackManager
-import com.facebook.FacebookCallback
-import com.facebook.FacebookException
-import com.facebook.login.LoginResult
+import android.content.Intent
 import com.facebook.login.widget.LoginButton
+import com.sandeepshabd.dailysync.DailySyncApplication
 import com.sandeepshabd.dailysync.R
+import com.sandeepshabd.dailysync.helper.FacebookHelper
 
 import kotlinx.android.synthetic.main.activity_login.*
+import javax.inject.Inject
 
 /**
  * A login screen that offers login via email/password.
@@ -39,11 +39,16 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
+
+    @Inject
+    lateinit var facebookHelper: FacebookHelper
+
     private var mAuthTask: UserLoginTask? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
+        injectThisActivity()
         // Set up the login form.
         populateAutoComplete()
         password.setOnEditorActionListener(TextView.OnEditorActionListener { _, id, _ ->
@@ -57,27 +62,18 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
         email_sign_in_button.setOnClickListener { attemptLogin() }
 
 
-        var callbackManager = CallbackManager.Factory.create()
         var loginButton = findViewById<LoginButton>(R.id.login_button)
         loginButton.setReadPermissions("email");
 
         // Callback registration
-        loginButton.registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
-            override fun onSuccess(loginResult: LoginResult) {
-                // App code
+        loginButton.registerCallback(facebookHelper.registerFacebook(),
+                facebookHelper.provideFacebookCallBack())
 
+    }
 
-            }
-
-            override fun onCancel() {
-                // App code
-            }
-
-            override fun onError(exception: FacebookException) {
-                // App code
-            }
-        })
-
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        facebookHelper.registerFacebook()?.onActivityResult(requestCode, resultCode, data)
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun populateAutoComplete() {
@@ -322,6 +318,12 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
          */
         private val DUMMY_CREDENTIALS = arrayOf("foo@example.com:hello", "bar@example.com:world")
     }
+
+    fun injectThisActivity(){
+        (application as DailySyncApplication).dailySyncAppComponent.inject(this)
+    }
+
+
 }
 
 

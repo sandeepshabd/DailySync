@@ -29,7 +29,7 @@ class SummaryActivity : AppCompatActivity() {
 
         var dataSet = PieDataSet(entryForChart,getResources().getString(R.string.numbers))
         dataSet.colors = ColorTemplate.COLORFUL_COLORS.toMutableList()
-        
+
         var pieData = PieData(dataSet)
         pieChart.data = pieData
         pieChart.data.setValueTextSize(15f)

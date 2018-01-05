@@ -5,13 +5,9 @@ import android.app.Service
 import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
 import android.location.Criteria
-import android.location.Location
-import android.location.LocationListener
 import android.location.LocationManager
 import android.os.AsyncTask
-import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import com.amazonaws.auth.CognitoCachingCredentialsProvider
@@ -30,7 +26,7 @@ import java.nio.ByteBuffer
 import java.util.*
 
 
-class DailySyncService : Service(), AnkoLogger, SensorEventListener, LocationListener {
+class DailySyncService : Service(), AnkoLogger {
 
 
     var COGNITO_POOL_ID = ""
@@ -90,23 +86,6 @@ class DailySyncService : Service(), AnkoLogger, SensorEventListener, LocationLis
 
     }
 
-
-    override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.getType() === Sensor.TYPE_ACCELEROMETER) {
-            // gravityFlag= true;
-            for (i in 0..2) {
-                mGravity[i] = event?.values[i]
-                senddataToBO("accelerometer_x:" + mGravity[0])
-                senddataToBO("accelerometer_y:" + mGravity[1])
-                senddataToBO("accelerometer_z:" + mGravity[2])
-            }
-        }
-    }
-
-    private fun senddataToBO(s: String) {
-        //info(s)
-    }
-
     @SuppressLint("MissingPermission")
     override fun onCreate() {
         super.onCreate()
@@ -115,16 +94,6 @@ class DailySyncService : Service(), AnkoLogger, SensorEventListener, LocationLis
         THING_NAME = resources.getString(R.string.thing_name)
         info("DailySyncService started.")
         try {
-//            val mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-//            val accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-//           // mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI)
-//
-//            val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-//            if(locationManager != null){
-//                locationManager.requestLocationUpdates(getProviderName(locationManager), 0,
-//                        0f, this)
-//            }
-
             connectToAWS()
         } catch (e: Exception) {
             error(e)
@@ -156,18 +125,5 @@ class DailySyncService : Service(), AnkoLogger, SensorEventListener, LocationLis
         throw  UnsupportedOperationException("Not yet implemented")
     }
 
-    override fun onLocationChanged(location: Location?) {
-        senddataToBO("speed:" + location?.speed?.times(2.23694))
-        senddataToBO("latitude:" + location?.latitude)
-        senddataToBO("longitude:" + location?.longitude)
-        senddataToBO("altitude:" + location?.altitude)
-    }
 
-    override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) {}
-
-    override fun onProviderEnabled(p0: String?) {}
-
-    override fun onProviderDisabled(p0: String?) {}
-
-    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
 }

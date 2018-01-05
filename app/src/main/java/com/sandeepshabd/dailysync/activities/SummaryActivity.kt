@@ -1,11 +1,10 @@
 package com.sandeepshabd.dailysync.activities
 
 import android.graphics.Color
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.Description
-import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
@@ -42,8 +41,6 @@ class SummaryActivity : AppCompatActivity() {
         pieChart.setDrawHoleEnabled(true);
         pieChart.setTransparentCircleRadius(30f);
         pieChart.setHoleRadius(30f);
-
-
 
 
     }

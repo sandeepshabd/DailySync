@@ -16,28 +16,28 @@ import org.jetbrains.anko.startService
 /**
  * Created by sandeepshabd on 1/3/18.
  */
-class FacebookHelper(var context: Context):AnkoLogger {
+class FacebookHelper(var context: Context) : AnkoLogger {
 
-    var callBackmanager:CallbackManager? = null
+    var callBackmanager: CallbackManager? = null
     var loginActivityToFinish: ILoginView? = null
 
-    fun registerActivity(loginActivity:ILoginView?){
+    fun registerActivity(loginActivity: ILoginView?) {
         loginActivityToFinish = loginActivity
     }
 
 
-    fun registerFacebook():CallbackManager?{
-        if(callBackmanager == null){
+    fun registerFacebook(): CallbackManager? {
+        if (callBackmanager == null) {
             callBackmanager = CallbackManager.Factory.create()
         }
         return callBackmanager
     }
 
-    fun provideFacebookCallBack(): FacebookCallback<LoginResult>{
+    fun provideFacebookCallBack(): FacebookCallback<LoginResult> {
         return object : FacebookCallback<LoginResult> {
             override fun onSuccess(loginResult: LoginResult) {
                 // App code
-            info("success from facebook")
+                info("success from facebook")
                 info(
                         "User ID: "
                                 + loginResult.getAccessToken().getUserId()
@@ -49,7 +49,7 @@ class FacebookHelper(var context: Context):AnkoLogger {
                 context.startActivity<SummaryActivity>()
                 loginActivityToFinish?.finishLoginActivity()
 
-           }
+            }
 
             override fun onCancel() {
                 // App code

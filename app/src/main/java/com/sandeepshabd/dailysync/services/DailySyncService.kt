@@ -3,11 +3,8 @@ package com.sandeepshabd.dailysync.services
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Intent
-import android.hardware.Sensor
-import android.hardware.SensorEvent
 import android.location.Criteria
 import android.location.LocationManager
-import android.os.AsyncTask
 import android.os.IBinder
 import android.util.Log
 import com.amazonaws.auth.CognitoCachingCredentialsProvider
@@ -19,6 +16,9 @@ import com.sandeepshabd.dailysync.R
 import com.sandeepshabd.dailysync.models.Reported
 import com.sandeepshabd.dailysync.models.SpeedControl
 import com.sandeepshabd.dailysync.models.State
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import org.jetbrains.anko.AnkoLogger
 import org.jetbrains.anko.error
 import org.jetbrains.anko.info
@@ -52,38 +52,42 @@ class DailySyncService : Service(), AnkoLogger {
             iotDataClient = AWSIotDataClient(credentialsProvider)
             iotDataClient?.endpoint = CUSTOMER_SPECIFIC_ENDPOINT
             info("iotDataClient:" + iotDataClient)
-            var upDateTask = UpdateShadowTask()
-            upDateTask.execute()
+            runTaskToSendData()
         } catch (e: Exception) {
             error { e }
         }
     }
 
-    private inner class UpdateShadowTask : AsyncTask<Void, Void, Boolean>() {
+    private fun runTaskToSendData() {
+        Observable.fromCallable(
+                { runInBackGroundThread() })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe()
+    }
 
-        override fun doInBackground(vararg voids: Void): Boolean {
-            try {
-                var speedControl = SpeedControl(State(Reported(4,true), null))
-                var updateState: String? = Gson().toJson(speedControl)
-                val request = UpdateThingShadowRequest()
-                info("request:" + request)
-                info("updateState:" + updateState)
-                request.thingName = THING_NAME
 
-                val payloadBuffer = ByteBuffer.wrap(updateState!!.toByteArray())
-                request.payload = payloadBuffer
+    private fun runInBackGroundThread(): Boolean {
+        try {
+            var speedControl = SpeedControl(State(Reported(4, true), null))
+            var updateState: String? = Gson().toJson(speedControl)
+            val request = UpdateThingShadowRequest()
+            info("request:" + request)
+            info("updateState:" + updateState)
+            request.thingName = THING_NAME
 
-                var updateResult = iotDataClient?.updateThingShadow(request)
-                info("updateResult:" + updateResult)
+            val payloadBuffer = ByteBuffer.wrap(updateState!!.toByteArray())
+            request.payload = payloadBuffer
 
-            } catch (e: Exception) {
-                Log.e(UpdateShadowTask::class.java.canonicalName, "updateShadowTask", e)
+            var updateResult = iotDataClient?.updateThingShadow(request)
+            info("updateResult:" + updateResult)
 
-            }
+        } catch (e: Exception) {
+            Log.e(DailySyncService::class.java.simpleName, "error while updating data", e)
 
-            return true
         }
 
+        return true
     }
 
     @SuppressLint("MissingPermission")

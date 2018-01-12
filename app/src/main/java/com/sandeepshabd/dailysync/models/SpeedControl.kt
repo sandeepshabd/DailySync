@@ -5,6 +5,6 @@ package com.sandeepshabd.dailysync.models
  */
 data class SpeedControl(var state: State)
 data class State(var reported:Reported, var desired: Desired?)
-data class Reported(var speed:Int,var overTheLimit:Boolean)
-data class Desired(var speed:Int,var overTheLimit:Boolean)
-data class Delta(var speed:Int,var overTheLimit:Boolean)
+data class Reported(var speed:Float,var overTheLimit:Boolean, var acceleration:Float)
+data class Desired(var speed:Float,var overTheLimit:Boolean, var acceleration:Float)
+//data class Delta(var speed:Float,var overTheLimit:Boolean,, var acceleration:Float)

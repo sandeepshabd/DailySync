@@ -3,6 +3,10 @@ package com.sandeepshabd.dailysync.services
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Criteria
 import android.location.LocationManager
 import android.os.IBinder
@@ -17,9 +21,11 @@ import com.sandeepshabd.dailysync.models.Reported
 import com.sandeepshabd.dailysync.models.SpeedControl
 import com.sandeepshabd.dailysync.models.State
 import io.reactivex.Observable
+import io.reactivex.ObservableEmitter
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import org.jetbrains.anko.AnkoLogger
+import org.jetbrains.anko.debug
 import org.jetbrains.anko.error
 import org.jetbrains.anko.info
 import java.nio.ByteBuffer
@@ -35,41 +41,114 @@ class DailySyncService : Service(), AnkoLogger {
 
     var iotDataClient: AWSIotDataClient? = null
     var MY_REGION = Regions.US_EAST_2
+    var mSensorManager: SensorManager? = null
+    var accelerometer: Sensor? = null
 
-    var mGravity = FloatArray(3)
     var credentialsProvider: CognitoCachingCredentialsProvider? = null
+    val mainCalendar = GregorianCalendar()
+
+    var iotObserable: Observable<Float>? = null
+    var emitter: ObservableEmitter<Float>? = null
+
+
+    @SuppressLint("MissingPermission")
+    override fun onCreate() {
+        super.onCreate()
+        COGNITO_POOL_ID = resources.getString(R.string.cognito_pool_id)
+        CUSTOMER_SPECIFIC_ENDPOINT = resources.getString(R.string.customer_specific_endpoint)
+        THING_NAME = resources.getString(R.string.thing_name)
+        debug("onCreate")
+        info("DailySyncService started.connectToAWS")
+        connectToAWS()
+        info("DailySyncService started.createObservables")
+        createObservables()
+        info("DailySyncService started.registerAccelSensors")
+        registerAccelSensors()
+        info("DailySyncService started.runTaskToSendData")
+        runTaskToSendData()
+
+
+        var current_hour = mainCalendar.get(Calendar.HOUR_OF_DAY)
+        var current_minute = mainCalendar.get(Calendar.MINUTE)
+        info("collection time started at:HR:" + current_hour)
+        info("collection time started at:minues:" + current_minute)
+    }
 
 
     fun connectToAWS() {
+        debug("connectToAWS")
         try {
             credentialsProvider = CognitoCachingCredentialsProvider(
                     applicationContext,
                     COGNITO_POOL_ID, // Identity Pool ID
                     MY_REGION // Region
             )
-            info("credentialsProvider:" + credentialsProvider)
 
             iotDataClient = AWSIotDataClient(credentialsProvider)
             iotDataClient?.endpoint = CUSTOMER_SPECIFIC_ENDPOINT
             info("iotDataClient:" + iotDataClient)
-            runTaskToSendData()
         } catch (e: Exception) {
             error { e }
         }
     }
 
-    private fun runTaskToSendData() {
-        Observable.fromCallable(
-                { runInBackGroundThread() })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe()
+
+    fun createObservables() {
+        debug("createObservables")
+        iotObserable = Observable.create({ observableEmitter -> emitter = observableEmitter })
     }
 
 
-    private fun runInBackGroundThread(): Boolean {
+    fun registerAccelSensors() {
+        debug("registerAccelSensors")
+        mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        debug("mSensorManager:" + mSensorManager != null)
+        accelerometer = mSensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        debug("accelerometer:" + accelerometer != null)
+        mSensorManager?.registerListener(object : SensorEventListener {
+            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
+
+            override fun onSensorChanged(event: SensorEvent?) {
+                debug("sensor data received")
+                if (event?.sensor?.getType() == Sensor.TYPE_ACCELEROMETER) {
+                    info("accelearation value:" + event.values[0])
+                    emitter?.onNext(event.values[0])
+                }
+            }
+        }
+                , accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+    }
+
+    private fun runTaskToSendData() {
+        debug("runTaskToSendData called.")
+        iotObserable?.
+                filter { data -> (data < -4 || data > 4) }?. //send data to AWS for acceleration greater than 4.
+                observeOn(Schedulers.newThread())?.
+                flatMap { data ->
+                    Observable.just(runInBackGroundThread(data))
+                }?.
+                flatMap { data ->
+                    Observable.fromCallable({
+                        debug("callable called.")
+                        runInBackGroundThread(data)
+                    })
+                }?.
+                observeOn(AndroidSchedulers.mainThread())?.
+                subscribe()
+    }
+
+
+    private fun runInBackGroundThread(accelerationData: Float): Boolean {
+        //TODO - speed implementation.
+        debug("runInBackGroundThread")
+        var speedControl = SpeedControl(State(Reported(0f, true, accelerationData), null))
+        return pushDataToBO(speedControl)
+    }
+
+    private fun pushDataToBO(speedControl: SpeedControl): Boolean {
         try {
-            var speedControl = SpeedControl(State(Reported(4, true), null))
+            debug("pushDataToBO")
+
             var updateState: String? = Gson().toJson(speedControl)
             val request = UpdateThingShadowRequest()
             info("request:" + request)
@@ -86,32 +165,11 @@ class DailySyncService : Service(), AnkoLogger {
             Log.e(DailySyncService::class.java.simpleName, "error while updating data", e)
 
         }
-
         return true
     }
 
-    @SuppressLint("MissingPermission")
-    override fun onCreate() {
-        super.onCreate()
-        COGNITO_POOL_ID = resources.getString(R.string.cognito_pool_id)
-        CUSTOMER_SPECIFIC_ENDPOINT = resources.getString(R.string.customer_specific_endpoint)
-        THING_NAME = resources.getString(R.string.thing_name)
-        info("DailySyncService started.")
-        try {
-            connectToAWS()
-        } catch (e: Exception) {
-            error(e)
-        }
 
-        val mainCalendar = GregorianCalendar()
-
-
-        var current_hour = mainCalendar.get(Calendar.HOUR_OF_DAY)
-        var current_minute = mainCalendar.get(Calendar.MINUTE)
-        info("collection time started at:HR:" + current_hour)
-        info("collection time started at:minues:" + current_minute)
-    }
-
+    //for location manager
     fun getProviderName(locationManager: LocationManager): String {
 
         val criteria = Criteria()
